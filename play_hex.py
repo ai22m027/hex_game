@@ -1,19 +1,52 @@
-#make sure that the module is located somewhere where your Python system looks for packages
-import sys
-sys.path.append("/home/sharwin/Desktop/")
-
-#importing the module
-from fhtw_hex import hex_engine as engine
-
-#initializing a game object
-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+###############################################################################
+# play_TTT.py
+#
+# Revision:     1.00
+# Date:         11/07/2020
+# Author:       Alex
+#
+# Purpose:      Plays a demonstration game of Tic-Tac-Toe using the Monte Carlo
+#               Tree Search algorithm. 
+#
+# Inputs:
+# 1. MCTS parameters, e.g. the computational constraints and UCT constant.
+# 2. Player selection - human vs. MCTS algorithm or algorithm vs. algorithm.
+#
+# Outputs:
+# 1. Text representations of the Tic-Tac-Toe game board and the MCTS tree.
+# 2. An optional print out of the MCTS tree after each player's move.
+#
+# Notes:
+# 1. Run this module to see a demonstration game of Tic-Tac-Toe played using 
+#    the MCTS algorithm.
+#
+###############################################################################
+"""
+# %% Imports
+from Hex import Hex
 from MCTS import MCTS
 from MCTS import MCTS_Node
 
 
+# %% Functions
+def get_human_input():
+    """Print a list of legal next states for the human player, and return
+    the player's selection.
+    """
+    legal_next_states = game_env.legal_next_states
+    for idx, state in enumerate(legal_next_states):
+        print(state[human_player_idx], '\t', idx, '\n')
+    move_idx = int(input('Enter move index: '))
+    game_env.step(legal_next_states[move_idx])
+    return legal_next_states[move_idx]
+
+
 # %% Initialize game environment and MCTS class
-game_env = engine.hexPosition()
-initial_state = None #game_env.board
+game_env = Hex(size=5)
+initial_state = game_env.state
 game_env.print()
 
 # Set MCTS parameters
@@ -47,30 +80,32 @@ tree_depth = 1 # Number of layers of tree to print (warning: expands quickly!)
 
 
 # %% Game loop
-while game_env.winner == 0:
-    if game_env.player == 1: # 1: White starts
+while not game_env.done:
+    if game_env.current_player(game_env.state) == 'White Player':
         if human_player1: 
             human_move = get_human_input()
         else: # MCTS plays as player 1
-            # print(game_env.history)
-            # print(len(game_env.history)-1)
-            if len(game_env.history)-1 != 0:  # Update P1 root node w/ P2's move
+            if game_env.move_count != 0:  # Update P1 root node w/ P2's move
                 root_node1 = MCTS.new_root_node(best_child1)
             MCTS.begin_tree_search(root_node1)
             best_child1 = MCTS.best_child(root_node1)
-            game_env.moove(best_child1.state)
+            game_env.step(best_child1.state)
             if print_trees: MCTS.print_tree(root_node1,tree_depth)
+            
     else:
         if human_player2: 
             human_move = get_human_input()
         else: # MCTS plays as player 2
-            if len(game_env.history)-1 == 1: # Initialize second player's MCTS node 
-                root_node2 = MCTS_Node(game_env.get_action_space(), parent=None, 
+            if game_env.move_count == 1: # Initialize second player's MCTS node 
+               root_node2 = MCTS_Node(game_env.state, parent=None, 
                                       initial_state=initial_state)
             else: # Update P2 root node with P1's move
                 root_node2 = MCTS.new_root_node(best_child2)
             MCTS.begin_tree_search(root_node2)
             best_child2 = MCTS.best_child(root_node2)
-            game_env.moove(best_child2.state)
+            game_env.step(best_child2.state)
             if print_trees: MCTS.print_tree(root_node2,tree_depth)
+
     game_env.print()        
+    game_env._evaluate_white(game_env.state, verbose=True)
+    game_env._evaluate_black(game_env.state, verbose=True)  
