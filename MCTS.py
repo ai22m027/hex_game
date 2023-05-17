@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 import multiprocessing as mp
 
 
-MAX_PROCESSORS = mp.cpu_count()
+MAX_PROCESSORS = 4 #mp.cpu_count()
 
 
 class MCTS:
@@ -77,7 +77,7 @@ class MCTS:
                 node.backpropagation(q_value, node.player) 
             else:
                 next_state = node.unvisited_child_states.pop()
-                #print("popped next_state", next_state)
+                #print("popped_next_state", next_state)
                 child_node = MCTS_Node(next_state, parent=node)
                 #print("child node", child_node.state)
                 node.children.append(child_node) # Expand tree
@@ -97,7 +97,8 @@ class MCTS:
                 else:
                     child_node.selection() # Continue selection phase
             else: # Node is terminal state
-                outcome = cls.determine_outcome(node)
+                done, outcome = cls.determine_outcome(node)
+                print("out:",outcome)
                 node.backpropagation(outcome, node.player)               
     
     @classmethod
@@ -135,23 +136,19 @@ class MCTS:
             if cls.multiproc: np.random.seed() # Ensure different RNG seeds
             game_sim = deepcopy(cls.game_env) # Copy of environment for simulation
             # Play states that occurred between the root node and the current node
-            print("node_history", node.history)
+            #print("node_history", node.history)
             for move_num, state in enumerate(node.history):
-                # print("move_num", move_num)
-                # print("state", state)
-                print(len(game_sim.history))
-                if (move_num) > len(game_sim.history):
-                    game_sim.moove(state)
+                if (move_num) > game_sim.move_count: game_sim.step(state)
             # Simulate from current node state to terminal state
-            while game_sim.winner == 0: 
-                legal_next_states = game_sim.get_action_space()
-                move_idx = np.random.randint(0,len(legal_next_states))
-                #game_sim.print()
-                #print(legal_next_states)
-                #print(legal_next_states[move_idx])
-                game_sim.moove(legal_next_states[move_idx])
-            return game_sim.winner, node.player
 
+            while not game_sim.done: 
+                legal_next_states = game_sim.legal_next_states
+                # print("legal next states", legal_next_states)
+                # print(len(legal_next_states))
+                move_idx = np.random.randint(0,len(legal_next_states))
+                game_sim.step(legal_next_states[move_idx])
+
+            return game_sim.outcome, node.player
         else:
             done, outcome = cls.determine_outcome(node) # Terminal state
             return outcome, node.player
@@ -179,16 +176,14 @@ class MCTS:
             parent_player = parent_node.player
         else: # Root node
             try:
-                parent_player = cls.current_player()
+                parent_player = cls.current_player(cls.game_env.history[-2])
             except:
-                parent_player = 'player1' if player == 'player2' else 'player2'
+                parent_player = 'White Player' if player == 'Black Player' else 'Black Player'
         if type(outcome) == str: # Random rollout
-            if outcome == 'player1_wins':
-                reward = 1 if parent_player == 'player1' else -1
-            elif outcome == 'player2_wins':
-                reward = 1 if parent_player == 'player2' else -1
-            elif outcome == 'draw':
-                reward = 0
+            if outcome == 'White Player Wins!':
+                reward = 1 if parent_player == 'White Player' else -1
+            elif outcome == 'Black Player Wins!':
+                reward = 1 if parent_player == 'Black Player' else -1
             return reward
         else: # Outcome is state's estimated Q-value from neural network
             if sim_player != parent_player:
@@ -212,11 +207,13 @@ class MCTS:
         return True
 
     @classmethod        
-    def get_legal_next_states(cls):
+    def get_legal_next_states(cls, history):
         """Query the game environment to get the legal next states for a 
         given state of the game.
-        """        
-        return cls.game_env.get_action_space()
+        """
+        #print("legal next:", cls.game_env.get_legal_next_states(history))
+        
+        return cls.game_env.get_legal_next_states(history)
             
     @classmethod 
     def begin_tree_search(cls, root_node):
@@ -251,7 +248,7 @@ class MCTS:
                 expon_visits = [n ** (1/cls.tau) for n in visits]
                 total = np.sum(expon_visits)
                 probs = [n / total for n in expon_visits]
-                if len(game_env.history)-1 > cls.tau_decay_delay:
+                if cls.game_env.move_count > cls.tau_decay_delay:
                     cls.tau -= cls.tau_decay
                     if np.isclose(cls.tau, 0): cls.tau = 0
                 return np.random.choice(node.children, p=probs)
@@ -272,28 +269,28 @@ class MCTS:
         Otherwise, the opponent's move did not get visited during the previous 
         turn's selection phase and must be created here and returned as the new 
         root node.
+        
+        In some games it's possible that a player will make multiple moves in
+        one turn (such as a double jump in Checkers).  A WHILE loop checks to
+        see if the other player made multiple consecutive moves, and if so the 
+        following nested FOR loops will traverse through the search tree until
+        the node is found that corresponds to the current state of the game.
         """
-        new_state = cls.game_env.get_action_space()
-        new_root = old_root 
+        new_state = cls.game_env.state
+        new_root = old_root        
         for child in new_root.children:
-            opponents_last_move = np.where(np.array(cls.game_env.history[-1]) - np.array(cls.game_env.history[-2]) != 0)
-            last_tuple = (int(opponents_last_move[0]),int(opponents_last_move[1]))
-            
-            if child.state == last_tuple:
+            if (child.state == cls.game_env.history[-1]).all():
                 new_root = child
                 break
-            
-        #print(new_state)
-        #print(new_root.state)
-        if (new_root.state in new_state):
+        if (new_root.state == new_state).all():
             new_root.parent = None
             return new_root
         else: # This possible move didn't get visited during search
             new_root = MCTS_Node(new_state)
             new_root.history = deepcopy(cls.game_env.history)
-            # raise ValueError('All child nodes should be visited!  Consider '
-            #                   'increasing number of rollouts or comment out this'
-            #                   'error.')
+            raise ValueError('All child nodes should be visited!  Consider '
+                              'increasing number of rollouts or comment out this'
+                              'error.')
             return new_root
     
     @classmethod
@@ -301,14 +298,15 @@ class MCTS:
         """Query the game environment to determine the winner (if any) of the
         game.  
         """
+        print(node.history)
         return cls.game_env.determine_outcome(node.history)
 
     @classmethod
-    def current_player(cls):
+    def current_player(cls, state):
         """Query the game environment to determine which player's turn it is
         for the given state.
         """
-        return cls.game_env.player
+        return cls.game_env.current_player(state)
     
     @classmethod
     def print_tree(cls, root_node, max_tree_depth=10):
@@ -359,9 +357,8 @@ class MCTS_Node:
         synchronized with the game environment's move count.  This only has to 
         be done once at the start of the game if the MCTS is player 2.
         """
-
         self.state = state
-        self.player = MCTS.current_player()
+        self.player = MCTS.current_player(self.state)
         self.parent = parent
         if parent:
             self.history = parent.history.copy()
@@ -374,7 +371,7 @@ class MCTS_Node:
         self._number_of_visits = 0
         self._total_reward = 0
         self._prior_prob = 0
-        self.unvisited_child_states = MCTS.get_legal_next_states()
+        self.unvisited_child_states = MCTS.get_legal_next_states(self.history)
         self.terminal = False if self.unvisited_child_states else True
         self.printed = False # Used by MCTS.print_tree()
             
