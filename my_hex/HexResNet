@@ -1,0 +1,99 @@
+#imports for the neural network
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+class HexResNet(nn.Module):
+    def __init__(self, game, num_resBlocks, num_hidden):
+        super().__init__()
+        self.game = game
+        self.num_resBlocks = num_resBlocks
+        self.num_hidden = num_hidden
+        self.startBlock = nn.Sequential(
+            nn.Conv2d(3, num_hidden, kernel_size=3, padding=1),
+            nn.BatchNorm2d(num_hidden),
+            nn.ReLU()
+        )
+
+        # Define a hexagonal convolutional layer
+        self.hexConv = HexConv(num_hidden, num_hidden, kernel_size=3, padding=1)
+
+        self.backBone = nn.ModuleList(
+            [ResBlock(num_hidden, self.hexConv) for i in range(num_resBlocks)]
+        )
+
+        self.policyHead = nn.Sequential(
+            nn.Conv2d(num_hidden, 32, kernel_size=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(32 * self.game.num_cells, self.game.action_size)
+        )
+
+        self.valueHead = nn.Sequential(
+            nn.Conv2d(num_hidden, 3, kernel_size=1),
+            nn.BatchNorm2d(3),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(3 * self.game.num_cells, 1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        x = self.startBlock(x)
+        x = self.hexConv(x)
+        for resBlock in self.backBone:
+            x = resBlock(x)
+        policy = self.policyHead(x)
+        value = self.valueHead(x)
+        return policy, value
+
+
+class ResBlock(nn.Module):
+    def __init__(self, num_hidden, conv_layer):
+        super().__init__()
+        self.conv1 = conv_layer(num_hidden, num_hidden, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(num_hidden)
+        self.conv2 = conv_layer(num_hidden, num_hidden, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(num_hidden)
+
+    def forward(self, x):
+        residual = x
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.bn2(self.conv2(x))
+        x += residual
+        x = F.relu(x)
+        return x
+
+
+class HexConv(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding=0):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.weight = nn.Parameter(torch.randn(out_channels, in_channels, kernel_size, kernel_size))
+        self.bias = nn.Parameter(torch.zeros(out_channels))
+
+    def forward(self, x):
+        # Compute padding size
+        p = self.padding
+        ph = (self.kernel_size - 1) // 2
+        pw = (self.kernel_size - 1) // 2
+        pad_size = (pw + p, pw + p, ph + p, ph + p)
+
+        # Apply padding
+        x = F.pad(x, pad_size, mode='constant', value=0)
+
+        # Apply hexagonal convolution
+        out = []
+        for i in range(self.kernel_size):
+            for j in range(self.kernel_size):
+                if i + j >= self.kernel_size:
+                    break
+                out.append(x[:, :, i:self.game.row_count+self.kernel_size-i-1-j, j:self.game.col_count+self.kernel_size-j-1-i])
+
+        out = torch.stack(out, dim=2)
+        out = torch.einsum("bchwio,io->bchw", out, self.weight)
+        out += self.bias
+        return out
