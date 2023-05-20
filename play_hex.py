@@ -29,7 +29,37 @@
 from Hex import Hex
 from MCTS import MCTS
 from MCTS import MCTS_Node
+from keras.models import load_model
 
+
+
+BOARD_SIZE = 7 # Size of the Hex Board
+
+# Set MCTS parameters
+mcts_kwargs = {     # Parameters for MCTS used in tournament
+'BOARD_SIZE' : BOARD_SIZE,
+'NN_FN' : r"data/model/Hex_Model_" + str(BOARD_SIZE) + "x"+ str(BOARD_SIZE) + ".h5",
+'UCT_C' : 4,                # Constant C used to calculate UCT value
+'CONSTRAINT' : 'rollout',   # Constraint can be 'rollout' or 'time'
+'BUDGET' : 1000,            # Maximum number of rollouts or time in seconds
+'MULTIPROC' : False,        # Enable multiprocessing
+'NEURAL_NET' : True,       # If False uses random rollouts instead of NN
+'VERBOSE' : False,           # MCTS prints search start/stop messages if True
+'TRAINING' : False,         # True if self-play, False if competitive play
+'DIRICHLET_ALPHA' : 1.0,    # Used to add noise to prior probs of actions
+'DIRICHLET_EPSILON' : 0.25, # Fraction of noise added to prior probs of actions  
+'TEMPERATURE_TAU' : 0,      # Initial value of temperature Tau
+'TEMPERATURE_DECAY' : 0,    # Linear decay of Tau per move
+'TEMP_DECAY_DELAY' : 0      # Move count before beginning decay of Tau value
+}
+
+# %% Initialize game environment and MCTS class
+
+if mcts_kwargs['NEURAL_NET']:
+    nn = load_model(mcts_kwargs['NN_FN'])
+    game_env = Hex(size=mcts_kwargs['BOARD_SIZE'], neural_net=nn)
+else:
+    game_env = Hex(size=mcts_kwargs['BOARD_SIZE'], neural_net=None)
 
 # %% Functions
 def get_human_input():
@@ -43,29 +73,11 @@ def get_human_input():
     game_env.step(legal_next_states[move_idx])
     return legal_next_states[move_idx]
 
-
-# %% Initialize game environment and MCTS class
-game_env = Hex(size=5)
+mcts_kwargs['GAME_ENV'] = game_env
+MCTS(**mcts_kwargs)    
 initial_state = game_env.state
 game_env.print()
 
-# Set MCTS parameters
-mcts_kwargs = {     # Parameters for MCTS used in tournament
-'GAME_ENV' : game_env,
-'UCT_C' : 4,                # Constant C used to calculate UCT value
-'CONSTRAINT' : 'rollout',   # Constraint can be 'rollout' or 'time'
-'BUDGET' : 2000,            # Maximum number of rollouts or time in seconds
-'MULTIPROC' : False,        # Enable multiprocessing
-'NEURAL_NET' : False,       # If False uses random rollouts instead of NN
-'VERBOSE' : True,           # MCTS prints search start/stop messages if True
-'TRAINING' : False,         # True if self-play, False if competitive play
-'DIRICHLET_ALPHA' : 1.0,    # Used to add noise to prior probs of actions
-'DIRICHLET_EPSILON' : 0.25, # Fraction of noise added to prior probs of actions  
-'TEMPERATURE_TAU' : 0,      # Initial value of temperature Tau
-'TEMPERATURE_DECAY' : 0,    # Linear decay of Tau per move
-'TEMP_DECAY_DELAY' : 0      # Move count before beginning decay of Tau value
-}
-MCTS(**mcts_kwargs)
 
 # Choose whether to play against the MCTS or to pit them against each other
 human_player1 = False # Set true to play against the MCTS algorithm as player 1
