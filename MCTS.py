@@ -69,6 +69,7 @@ class MCTS:
         if node.unvisited_child_states:
             if cls.neural_net:
                 prob_vector, q_value = cls.game_env.predict(node.state)
+                
                 for _ in range(len(node.unvisited_child_states)):
                     next_state = node.unvisited_child_states.pop()
                     child_node = MCTS_Node(next_state, parent=node)
@@ -230,7 +231,7 @@ class MCTS:
         """After search is terminated, select the winning action based on 
         desired selection criterion.
         """
-        if cls.neural_net: criterion = 'robust'
+        if cls.neural_net: criterion = 'max'
         if criterion == 'max': # Max child: child with highest reward
             rewards = [child.w for child in node.children]
             return node.children[np.argmax(rewards)]

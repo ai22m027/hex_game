@@ -58,38 +58,39 @@ def create_nn(**kwargs):
     value_loss_weight = kwargs['VALUE_LOSS_WEIGHT']
     BOARD_SIZE = kwargs['BOARD_SIZE']
     inputs = Input(shape = (BOARD_SIZE,BOARD_SIZE,4))
-    conv0 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv0 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(inputs)
     bn0 = BatchNormalization(axis=-1)(conv0)
-    conv1 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv1 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(bn0)
     bn1 = BatchNormalization(axis=-1)(conv1)
-    conv2 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv2 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(bn1)
     bn2 = BatchNormalization(axis=-1)(conv2)
-    conv3 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv3 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(bn2)
     bn3 = BatchNormalization(axis=-1)(conv3)
-    conv4 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv4 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                     use_bias = True, data_format='channels_last',
                     kernel_regularizer=creg, bias_regularizer=creg)(bn3)
     bn4 = BatchNormalization(axis=-1)(conv4)
-    conv5 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv5 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                     use_bias = True, data_format='channels_last',
                     kernel_regularizer=creg, bias_regularizer=creg)(bn4)
     bn5 = BatchNormalization(axis=-1)(conv5)
-    conv6 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    conv6 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                     use_bias = True, data_format='channels_last',
                     kernel_regularizer=creg, bias_regularizer=creg)(bn5)
     bn6 = BatchNormalization(axis=-1)(conv6)
+    
     # Create policy head
-    policy_conv1 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+    policy_conv1 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
                       use_bias = True, data_format='channels_last',
-                      kernel_regularizer=creg, bias_regularizer=creg)(bn6)
+                      kernel_regularizer=creg, bias_regularizer=creg)(bn3)
     bn_pol1 = BatchNormalization(axis=-1)(policy_conv1)
     policy_conv2 = Conv2D(1, (1, 1), padding='same', activation = 'relu', 
                       use_bias = True, data_format='channels_last',
@@ -99,10 +100,11 @@ def create_nn(**kwargs):
     policy_output = Dense(BOARD_SIZE*BOARD_SIZE, activation = 'softmax', use_bias = True,
                   kernel_regularizer=dreg, bias_regularizer=dreg,
                   name='policy_head')(policy_flat1)
+    
     # Create value head
     value_conv1 = Conv2D(1, (1, 1), padding='same', activation = 'relu', 
                          use_bias = True, data_format='channels_last',
-                         kernel_regularizer=creg, bias_regularizer=creg)(bn6)
+                         kernel_regularizer=creg, bias_regularizer=creg)(bn3)
     bn_val1 = BatchNormalization(axis=-1)(value_conv1)
     value_flat1 = Flatten()(bn_val1)
     value_dense1 = Dense(BOARD_SIZE*BOARD_SIZE, activation='relu', use_bias = True,
@@ -197,12 +199,12 @@ def create_timestamp():
     timestamp_str = timestamp.strftime("%d-%b-%Y(%H:%M:%S)")
     return timestamp_str
 
-def plot_history(history, nn, TRAINING_ITERATION, BOARD_SIZE):
+def plot_history(history, nn, BOARD_SIZE):
     """Plot of training loss versus training epoch and save to disk."""
     legend = list(history.history.keys())
     for key in history.history.keys():
         plt.plot(history.history[key])
-    plt.title('Iteration {} Model Loss'.format(TRAINING_ITERATION))
+    plt.title('Model Loss')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(legend, loc='upper right')

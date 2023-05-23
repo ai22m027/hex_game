@@ -32,7 +32,6 @@ from MCTS import MCTS_Node
 from keras.models import load_model
 
 
-
 BOARD_SIZE = 7 # Size of the Hex Board
 
 # Set MCTS parameters
@@ -41,7 +40,7 @@ mcts_kwargs = {     # Parameters for MCTS used in tournament
 'NN_FN' : r"data/model/Hex_Model_" + str(BOARD_SIZE) + "x"+ str(BOARD_SIZE) + ".h5",
 'UCT_C' : 4,                # Constant C used to calculate UCT value
 'CONSTRAINT' : 'rollout',   # Constraint can be 'rollout' or 'time'
-'BUDGET' : 1000,            # Maximum number of rollouts or time in seconds
+'BUDGET' : 100,            # Maximum number of rollouts or time in seconds
 'MULTIPROC' : False,        # Enable multiprocessing
 'NEURAL_NET' : True,       # If False uses random rollouts instead of NN
 'VERBOSE' : False,           # MCTS prints search start/stop messages if True
@@ -99,8 +98,10 @@ while not game_env.done:
         else: # MCTS plays as player 1
             if game_env.move_count != 0:  # Update P1 root node w/ P2's move
                 root_node1 = MCTS.new_root_node(best_child1)
+            #print("root_node1", root_node1.state)
             MCTS.begin_tree_search(root_node1)
             best_child1 = MCTS.best_child(root_node1)
+            #print("best_child1", best_child1.state)
             game_env.step(best_child1.state)
             if print_trees: MCTS.print_tree(root_node1,tree_depth)
             
@@ -114,7 +115,9 @@ while not game_env.done:
             else: # Update P2 root node with P1's move
                 root_node2 = MCTS.new_root_node(best_child2)
             MCTS.begin_tree_search(root_node2)
+            #print("root_node2", root_node2.state)
             best_child2 = MCTS.best_child(root_node2)
+            #print("best_child2", best_child2.state)
             game_env.step(best_child2.state)
             if print_trees: MCTS.print_tree(root_node2,tree_depth)
 

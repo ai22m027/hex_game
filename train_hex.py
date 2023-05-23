@@ -84,7 +84,7 @@ selfplay_kwargs = {
 'BOARD_SIZE' : BOARD_SIZE, # Size of the Hex Board
 'TRAINING_ITERATION' : TRAINING_ITERATION,
 'NN_FN' : NN_FN,
-'NUM_SELFPLAY_GAMES' : 20,
+'NUM_SELFPLAY_GAMES' : 100,
 'NUM_CPUS' : 1              # Number of CPUs to use for parallel self-play
 }
 
@@ -114,15 +114,15 @@ if SELFPLAY:
 training_kwargs = {     # Parameters used to train neural network
 'BOARD_SIZE' : BOARD_SIZE, # Size of the Hex Board
 'TRAINING_ITERATION' : TRAINING_ITERATION,
-'NN_BASE_LR' : 1e-5,    # Neural network minimum learning rate for CLR
-'NN_MAX_LR' : 1e-3,     # Neural network maximum learning rate for CLR
+'NN_BASE_LR' : 1e-4,    # Neural network minimum learning rate for CLR
+'NN_MAX_LR' : 1e-4,     # Neural network maximum learning rate for CLR
 'CLR_SS_COEFF' : 4,     # CLR step-size coefficient
-'BATCH_SIZE' : 32,     # Batch size for training neural network
-'EPOCHS' : 100,         # Maximum number of training epochs
-'CONV_REG' : 0.001,     # L2 regularization term for Conv2D layers
-'DENSE_REG' : 0.001,    # L2 regularization term for Dense layers
+'BATCH_SIZE' : 128,     # Batch size for training neural network
+'EPOCHS' : 200,         # Maximum number of training epochs
+'CONV_REG' : 0.1,     # L2 regularization term for Conv2D layers
+'DENSE_REG' : 0.1,    # L2 regularization term for Dense layers
 'NUM_KERNELS' : 128,    # Number of Conv2D kernels in "body" of NN
-'VAL_SPLIT' : 0.1,     # Fraction of training data to use for validation
+'VAL_SPLIT' : 0.2,     # Fraction of training data to use for validation
 'MIN_DELTA' : 0.001, # Min amount val loss must decrease to prevent stopping
 'PATIENCE' : 500,    # Number of epochs of stagnation before stopping training
 'POLICY_LOSS_WEIGHT' : 1.0, # Weighting given to policy head loss
@@ -155,7 +155,7 @@ if TRAINING:
     else:
         # Train NN
         history, NEW_NN_FN = train_nn(training_data, nn, **training_kwargs)
-        plot_filename = plot_history(history, nn, TRAINING_ITERATION, BOARD_SIZE)
+        plot_filename = plot_history(history, nn, BOARD_SIZE)
         training_kwargs['OLD_NN_FN'] = NN_FN
         training_kwargs['NEW_NN_FN'] = NEW_NN_FN
         record_params('training', **training_kwargs)
