@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 import multiprocessing as mp
 
 
-MAX_PROCESSORS = 4 #mp.cpu_count()
+MAX_PROCESSORS = mp.cpu_count()
 
 
 class MCTS:
@@ -77,9 +77,7 @@ class MCTS:
                 node.backpropagation(q_value, node.player) 
             else:
                 next_state = node.unvisited_child_states.pop()
-                #print("popped_next_state", next_state)
                 child_node = MCTS_Node(next_state, parent=node)
-                #print("child node", child_node.state)
                 node.children.append(child_node) # Expand tree
                 if cls.computational_budget():
                     if cls.multiproc:
@@ -98,7 +96,6 @@ class MCTS:
                     child_node.selection() # Continue selection phase
             else: # Node is terminal state
                 done, outcome = cls.determine_outcome(node)
-                print("out:",outcome)
                 node.backpropagation(outcome, node.player)               
     
     @classmethod
@@ -116,6 +113,7 @@ class MCTS:
             uct_values = [child.q + 2.0 * cls.uct_c *
                           (2.0 * np.log(node.n) / child.n) ** 0.5
                           for child in node.children]
+
         return node.children[np.argmax(uct_values)]
     
     @classmethod
@@ -136,15 +134,11 @@ class MCTS:
             if cls.multiproc: np.random.seed() # Ensure different RNG seeds
             game_sim = deepcopy(cls.game_env) # Copy of environment for simulation
             # Play states that occurred between the root node and the current node
-            #print("node_history", node.history)
             for move_num, state in enumerate(node.history):
                 if (move_num) > game_sim.move_count: game_sim.step(state)
             # Simulate from current node state to terminal state
-
             while not game_sim.done: 
                 legal_next_states = game_sim.legal_next_states
-                # print("legal next states", legal_next_states)
-                # print(len(legal_next_states))
                 move_idx = np.random.randint(0,len(legal_next_states))
                 game_sim.step(legal_next_states[move_idx])
 
@@ -232,14 +226,14 @@ class MCTS:
                       str(datetime.now()-cls.start_time)[2:-4]))
                 
     @classmethod 
-    def best_child(cls, node, criterion='robust'):
+    def best_child(cls, node, criterion='max'):
         """After search is terminated, select the winning action based on 
         desired selection criterion.
         """
         if cls.neural_net: criterion = 'robust'
         if criterion == 'max': # Max child: child with highest reward
             rewards = [child.w for child in node.children]
-            return node.children(np.argmax(rewards))
+            return node.children[np.argmax(rewards)]
         elif criterion == 'robust': # Robust child: most visited child
             visits = [child.n for child in node.children]
             if not cls.training or cls.tau <= 0:
@@ -288,9 +282,12 @@ class MCTS:
         else: # This possible move didn't get visited during search
             new_root = MCTS_Node(new_state)
             new_root.history = deepcopy(cls.game_env.history)
-            raise ValueError('All child nodes should be visited!  Consider '
-                              'increasing number of rollouts or comment out this'
-                              'error.')
+            print("WARNING: All child nodes should be visited! Consider  \
+                              increasing number of rollouts or comment out this \
+                              error.")
+            # raise ValueError('All child nodes should be visited!  Consider '
+            #                   'increasing number of rollouts or comment out this'
+            #                   'error.')
             return new_root
     
     @classmethod
@@ -298,7 +295,7 @@ class MCTS:
         """Query the game environment to determine the winner (if any) of the
         game.  
         """
-        print(node.history)
+        #print(node.history)
         return cls.game_env.determine_outcome(node.history)
 
     @classmethod
