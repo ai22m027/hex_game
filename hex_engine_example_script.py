@@ -8,10 +8,13 @@ from fhtw_hex import hex_engine as engine
 game = engine.hexPosition()
 
 #play the game against a random player, human plays 'black'
-game.human_vs_machine(human_player=-1, machine=None)
+#game.human_vs_machine(human_player=-1, machine=None)
 
 #this is how you will provide the agent you generate during the group project
 from fhtw_hex import example as eg
+from HexAgent import HexAgent
+
+agent = HexAgent()
 
 #play the game against the example agent, human play 'white'
-game.human_vs_machine(human_player=1, machine=eg.machine)
+game.human_vs_machine(human_player=1, machine=agent.predict)
