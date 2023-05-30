@@ -40,12 +40,12 @@ BOARD_SIZE = 7 # Size of the Hex Board
 
 TRAINING_ITERATION = 0 # Current training iteration
 # NN_FN required if TRAINING_ITERATION > 0 and SELFPLAY = TRUE
-NN_FN = None # 'data/model/Hex_Model_v0.h5'
+NN_FN =  r"data/model/Hex_model_" + str(BOARD_SIZE) + "x"+ str(BOARD_SIZE) + "_v0.h5"
 # NEW_NN_FN required if TRAINING = FALSE and EVALUATION = TRUE
-NEW_NN_FN = None # 'data/model/Hex_Model.h5' #'data/model/Hex_Model10_12-Feb-2021(14:50:36).h5'
+NEW_NN_FN = r"data/model/Hex_model_" + str(BOARD_SIZE) + "x"+ str(BOARD_SIZE) + "_v0.h5"  #'data/model/Hex_Model10_12-Feb-2021(14:50:36).h5'
 SELFPLAY = False            # If True self-play phase will be executed
-TRAINING = True            # If True training phase will be executed
-EVALUATION = False          # If True evaluation phase will be executed
+TRAINING = False            # If True training phase will be executed
+EVALUATION = True          # If True evaluation phase will be executed
 
 # Final evaluation of models after running several training iterations 
 FINAL_EVALUATION = False         # If True final evaluation will be performed
@@ -92,7 +92,7 @@ mcts_kwargs = { # Parameters for MCTS used in generating data
 'GAME_ENV' : None,          # Game environment loaded in function for multiprocessing
 'UCT_C' : 4,                # Constant C used to calculate UCT value
 'CONSTRAINT' : 'rollout',   # Constraint can be 'rollout' or 'time'
-'BUDGET' : 2000,            # Maximum number of rollouts or time in seconds
+'BUDGET' : 200,            # Maximum number of rollouts or time in seconds
 'MULTIPROC' : False,        # Enable multiprocessing
 'NEURAL_NET' : False,       # If False uses random rollouts instead of NN
 'VERBOSE' : False,          # MCTS prints search start/stop messages if True
@@ -121,12 +121,12 @@ training_kwargs = {     # Parameters used to train neural network
 'EPOCHS' : 200,         # Maximum number of training epochs
 'CONV_REG' : 0.1,     # L2 regularization term for Conv2D layers
 'DENSE_REG' : 0.1,    # L2 regularization term for Dense layers
-'NUM_KERNELS' : 128,    # Number of Conv2D kernels in "body" of NN
+'NUM_KERNELS' : 256,    # Number of Conv2D kernels in "body" of NN
 'VAL_SPLIT' : 0.2,     # Fraction of training data to use for validation
 'MIN_DELTA' : 0.001, # Min amount val loss must decrease to prevent stopping
 'PATIENCE' : 500,    # Number of epochs of stagnation before stopping training
 'POLICY_LOSS_WEIGHT' : 1.0, # Weighting given to policy head loss
-'VALUE_LOSS_WEIGHT' : 1.0,  # Weighting given to value head loss
+'VALUE_LOSS_WEIGHT' : 0.00000001,  # Weighting given to value head loss
 'SLIDING_WINDOW' : 1 # Number self-play iterations to include in training data
 }
 

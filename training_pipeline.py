@@ -58,41 +58,53 @@ def create_nn(**kwargs):
     value_loss_weight = kwargs['VALUE_LOSS_WEIGHT']
     BOARD_SIZE = kwargs['BOARD_SIZE']
     inputs = Input(shape = (BOARD_SIZE,BOARD_SIZE,4))
-    conv0 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv0 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(inputs)
     bn0 = BatchNormalization(axis=-1)(conv0)
-    conv1 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv1 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(bn0)
     bn1 = BatchNormalization(axis=-1)(conv1)
-    conv2 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv2 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(bn1)
     bn2 = BatchNormalization(axis=-1)(conv2)
-    conv3 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv3 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                    use_bias = True, data_format='channels_last',
                    kernel_regularizer=creg, bias_regularizer=creg)(bn2)
     bn3 = BatchNormalization(axis=-1)(conv3)
-    conv4 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv4 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                     use_bias = True, data_format='channels_last',
                     kernel_regularizer=creg, bias_regularizer=creg)(bn3)
     bn4 = BatchNormalization(axis=-1)(conv4)
-    conv5 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv5 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                     use_bias = True, data_format='channels_last',
                     kernel_regularizer=creg, bias_regularizer=creg)(bn4)
     bn5 = BatchNormalization(axis=-1)(conv5)
-    conv6 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    conv6 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                     use_bias = True, data_format='channels_last',
                     kernel_regularizer=creg, bias_regularizer=creg)(bn5)
     bn6 = BatchNormalization(axis=-1)(conv6)
+    conv7 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+                    use_bias = True, data_format='channels_last',
+                    kernel_regularizer=creg, bias_regularizer=creg)(bn6)
+    bn7 = BatchNormalization(axis=-1)(conv7)
+    conv8 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+                    use_bias = True, data_format='channels_last',
+                    kernel_regularizer=creg, bias_regularizer=creg)(bn7)
+    bn8 = BatchNormalization(axis=-1)(conv8)
+    conv9 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
+                    use_bias = True, data_format='channels_last',
+                    kernel_regularizer=creg, bias_regularizer=creg)(bn8)
+    bn9 = BatchNormalization(axis=-1)(conv9)
     
     # Create policy head
-    policy_conv1 = Conv2D(num_kernels, (5, 5), padding='same', activation = 'relu', 
+    policy_conv1 = Conv2D(num_kernels, (3, 3), padding='same', activation = 'relu', 
                       use_bias = True, data_format='channels_last',
-                      kernel_regularizer=creg, bias_regularizer=creg)(bn3)
+                      kernel_regularizer=creg, bias_regularizer=creg)(bn9)
     bn_pol1 = BatchNormalization(axis=-1)(policy_conv1)
-    policy_conv2 = Conv2D(1, (1, 1), padding='same', activation = 'relu', 
+    policy_conv2 = Conv2D(BOARD_SIZE*BOARD_SIZE, (1, 1), padding='same', activation = 'relu', 
                       use_bias = True, data_format='channels_last',
                       kernel_regularizer=creg, bias_regularizer=creg)(bn_pol1)
     bn_pol2 = BatchNormalization(axis=-1)(policy_conv2)
@@ -100,11 +112,11 @@ def create_nn(**kwargs):
     policy_output = Dense(BOARD_SIZE*BOARD_SIZE, activation = 'softmax', use_bias = True,
                   kernel_regularizer=dreg, bias_regularizer=dreg,
                   name='policy_head')(policy_flat1)
-    
+    print(policy_output)
     # Create value head
-    value_conv1 = Conv2D(1, (1, 1), padding='same', activation = 'relu', 
+    value_conv1 = Conv2D(BOARD_SIZE*BOARD_SIZE, (1, 1), padding='same', activation = 'relu', 
                          use_bias = True, data_format='channels_last',
-                         kernel_regularizer=creg, bias_regularizer=creg)(bn3)
+                         kernel_regularizer=creg, bias_regularizer=creg)(bn9)
     bn_val1 = BatchNormalization(axis=-1)(value_conv1)
     value_flat1 = Flatten()(bn_val1)
     value_dense1 = Dense(BOARD_SIZE*BOARD_SIZE, activation='relu', use_bias = True,
@@ -151,6 +163,7 @@ def train_nn(training_data, neural_network, **kwargs):
                                                     save_weights_only=False, 
                                                     mode='auto', 
                                                     save_freq='epoch')
+      
     # Create data generators for training
     np.random.shuffle(training_data) # Randomize order of training data
     if VAL_SPLIT > 0: # Split data into training and validation sets
@@ -161,7 +174,9 @@ def train_nn(training_data, neural_network, **kwargs):
     else:
         validation_generator = None
         validation_steps = None
-    # Create generator to feed training data to NN        
+        
+
+    # Create generator to feed training data to NN  
     training_generator = Keras_Generator(training_data, BATCH_SIZE)
     steps_per_epoch = len(training_generator)
     # Set CLR options
@@ -323,6 +338,7 @@ class Keras_Generator(Sequence):
         states = np.array([e[0][:4] for e in data])        
         states = np.moveaxis(states,1,-1) # Channels last format
         probs = np.array([np.array(e[1]).flatten() for e in data])
+
         qvals = np.array([e[2]for e in data])
         zvals = np.array([e[3]for e in data])
         return (states, [probs, (qvals+zvals)/2])
@@ -393,8 +409,9 @@ class generate_Hex_data():
                     else:
                         qval = root_node1.q
                     experiences.append([root_node1.state, prob_planes, qval])
-                    #print("White Player's Turn:")
-                    #print(prob_planes, qval)
+                    # print("White Player's Turn:")
+                    # print(root_node1.state)
+                    # print(prob_planes)
                     #game_env.print()
                 else:
                     if game_env.move_count == 1: # Initialize second player's MCTS node 
@@ -417,8 +434,6 @@ class generate_Hex_data():
                     #print(prob_planes)
                     #game_env.print()
                     
-                #game_env.print()
-                
             if not terminated_game: # Include terminal state
                 prob_planes = np.zeros((self.BOARD_SIZE, self.BOARD_SIZE))
                 node_q = -1

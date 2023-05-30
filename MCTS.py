@@ -231,7 +231,7 @@ class MCTS:
         """After search is terminated, select the winning action based on 
         desired selection criterion.
         """
-        if cls.neural_net: criterion = 'max'
+        if cls.neural_net: criterion = 'robust'
         if criterion == 'max': # Max child: child with highest reward
             rewards = [child.w for child in node.children]
             return node.children[np.argmax(rewards)]

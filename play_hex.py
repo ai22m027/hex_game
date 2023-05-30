@@ -31,8 +31,7 @@ from MCTS import MCTS
 from MCTS import MCTS_Node
 from keras.models import load_model
 
-
-BOARD_SIZE = 7 # Size of the Hex Board
+BOARD_SIZE = 4 # Size of the Hex Board
 
 # Set MCTS parameters
 mcts_kwargs = {     # Parameters for MCTS used in tournament
@@ -44,7 +43,7 @@ mcts_kwargs = {     # Parameters for MCTS used in tournament
 'MULTIPROC' : False,        # Enable multiprocessing
 'NEURAL_NET' : True,       # If False uses random rollouts instead of NN
 'VERBOSE' : False,           # MCTS prints search start/stop messages if True
-'TRAINING' : False,         # True if self-play, False if competitive play
+'TRAINING' : True,         # True if self-play, False if competitive play
 'DIRICHLET_ALPHA' : 1.0,    # Used to add noise to prior probs of actions
 'DIRICHLET_EPSILON' : 0.25, # Fraction of noise added to prior probs of actions  
 'TEMPERATURE_TAU' : 0,      # Initial value of temperature Tau

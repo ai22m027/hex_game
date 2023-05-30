@@ -108,10 +108,12 @@ class Hex (object):
         nn_inp = np.moveaxis(state[:4],0,-1)
         nn_inp = nn_inp.reshape(1,self.size,self.size,4)
         prob_planes, q_value = self.neural_net.predict(nn_inp)
+        #print(prob_planes)
         prob_planes, q_value = prob_planes[0].reshape((self.size,self.size,1)), q_value[0][0] 
         action_mask = state[3]
         prob_planes = np.squeeze(prob_planes) * action_mask
         prob_planes = prob_planes / np.sum(prob_planes)
+        #print(prob_planes)
 
         return prob_planes, q_value
 
