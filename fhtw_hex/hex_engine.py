@@ -299,6 +299,9 @@ class hexPosition (object):
         If a machine is not specified random actions will be used.
         This method should not be used for training an algorithm.
         """
+        white_wins = 0
+        bla_wins = 0
+        
         #use random players as default if machines not specified
         if machine1 == None:
             def machine1 (board, action_list):
@@ -311,7 +314,7 @@ class hexPosition (object):
         #the match
         self.reset()
         while self.winner == 0:
-            self.print()
+            #self.print()
             if self.player == 1:
                 chosen = machine1(self.board, self.get_action_space())
             if self.player == -1:
@@ -323,6 +326,9 @@ class hexPosition (object):
             if self.winner == -1:
                 self.print()
                 self._evaluate_black(verbose=True)
+                
+        return self.winner
+    
     def replay_history (self):
         """
         Print the game history to standard output.
